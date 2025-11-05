@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Contraseña - Barbershop Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -28,11 +29,11 @@
             max-width: 500px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            text-align: center;
         }
         
         .icon {
             font-size: 64px;
+            text-align: center;
             margin-bottom: 20px;
             animation: bounce 2s infinite;
         }
@@ -46,6 +47,7 @@
             color: #333;
             font-size: 28px;
             margin-bottom: 16px;
+            text-align: center;
         }
         
         p {
@@ -53,9 +55,53 @@
             font-size: 16px;
             line-height: 1.6;
             margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 45px 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            padding: 4px;
         }
         
         .button {
+            width: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -64,52 +110,52 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
             transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
         }
         
-        .button:hover {
+        .button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
         
-        .button:active {
+        .button:active:not(:disabled) {
             transform: translateY(0);
         }
         
-        .instructions {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 24px;
-            text-align: left;
-        }
-        
-        .instructions h3 {
-            color: #333;
-            font-size: 18px;
-            margin-bottom: 12px;
-        }
-        
-        .instructions ol {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.8;
-            padding-left: 20px;
-        }
-        
-        .instructions li {
-            margin-bottom: 8px;
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         
         .error {
             background: #fee;
             border: 1px solid #fcc;
             border-radius: 8px;
-            padding: 16px;
-            margin-top: 20px;
+            padding: 12px;
+            margin-bottom: 20px;
             color: #c33;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #3c3;
+            font-size: 14px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            color: #856404;
+            font-size: 13px;
         }
         
         .spinner {
@@ -126,108 +172,291 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .requirements {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .requirements ul {
+            margin: 8px 0 0 20px;
+        }
+        
+        .requirements li {
+            margin: 4px 0;
+        }
+        
+        .requirement-met {
+            color: #28a745;
+        }
+        
+        .requirement-unmet {
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="icon">🔑</div>
-        <h1>Recuperar Contraseña</h1>
-        <p id="message">Redirigiendo a la aplicación...</p>
-        <div class="spinner" id="spinner"></div>
         
-        <button class="button" id="openAppBtn" style="display: none;" onclick="openApp()">
-            📱 Abrir Barbershop Manager
-        </button>
-        
-        <div class="instructions" id="instructions" style="display: none;">
-            <h3>📋 Instrucciones:</h3>
-            <ol>
-                <li>Asegúrate de tener la app <strong>Barbershop Manager</strong> instalada</li>
-                <li>Haz clic en el botón "Abrir Barbershop Manager"</li>
-                <li>Si el navegador pregunta, selecciona "Abrir en Barbershop Manager"</li>
-                <li>Ingresa tu nueva contraseña en la app</li>
-                <li>¡Listo! Ya podrás iniciar sesión</li>
-            </ol>
+        <!-- Loading State -->
+        <div id="loadingState">
+            <h1>Verificando enlace...</h1>
+            <div class="spinner"></div>
         </div>
         
-        <div class="error" id="error" style="display: none;">
-            <strong>⚠️ No se pudo abrir la app</strong>
-            <p style="margin-top: 8px; font-size: 14px;">
-                Por favor asegúrate de tener la app instalada en tu dispositivo.
-            </p>
+        <!-- Error State -->
+        <div id="errorState" class="hidden">
+            <h1>⚠️ Enlace Inválido</h1>
+            <div class="error">
+                <strong>Este enlace ha expirado o no es válido</strong>
+                <p style="margin-top: 8px;">Por favor solicita un nuevo enlace de recuperación desde la aplicación.</p>
+            </div>
+        </div>
+        
+        <!-- Form State -->
+        <div id="formState" class="hidden">
+            <h1>Nueva Contraseña</h1>
+            <p>Ingresa tu nueva contraseña para tu cuenta</p>
+            
+            <div id="messageContainer"></div>
+            
+            <form id="resetForm">
+                <div class="form-group">
+                    <label for="password">Nueva Contraseña</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            placeholder="Mínimo 6 caracteres"
+                            required
+                        >
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar Contraseña</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            placeholder="Repite tu contraseña"
+                            required
+                        >
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="requirements">
+                    <strong>Requisitos de la contraseña:</strong>
+                    <ul>
+                        <li id="req-length" class="requirement-unmet">✗ Mínimo 6 caracteres</li>
+                        <li id="req-match" class="requirement-unmet">✗ Las contraseñas coinciden</li>
+                    </ul>
+                </div>
+                
+                <button type="submit" class="button" id="submitBtn">
+                    ✅ Actualizar Contraseña
+                </button>
+            </form>
+        </div>
+        
+        <!-- Success State -->
+        <div id="successState" class="hidden">
+            <h1>✅ ¡Contraseña Actualizada!</h1>
+            <div class="success">
+                <strong>Tu contraseña ha sido cambiada exitosamente</strong>
+                <p style="margin-top: 8px;">Ya puedes iniciar sesión en la aplicación con tu nueva contraseña.</p>
+            </div>
+            <button class="button" onclick="window.close()">
+                Cerrar
+            </button>
         </div>
     </div>
 
     <script>
-        // Obtener los parámetros de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const accessToken = urlParams.get('access_token');
-        const refreshToken = urlParams.get('refresh_token');
-        const type = urlParams.get('type');
+        // Credenciales de Supabase
+        const SUPABASE_URL = 'https://bsvggmdntyimypntdmzo.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzdmdnbWRudHlpbXlwbnRkbXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxODcxNDgsImV4cCI6MjA3Nzc2MzE0OH0.GCDDTRwt4N_p3pcrL0dUeicNHfvSG2aXlUNy3esMem0';
         
-        // También intentar obtener del hash (Supabase a veces usa hash)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const hashAccessToken = hashParams.get('access_token');
-        const hashRefreshToken = hashParams.get('refresh_token');
-        const hashType = hashParams.get('type');
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        const finalAccessToken = accessToken || hashAccessToken;
-        const finalRefreshToken = refreshToken || hashRefreshToken;
-        const finalType = type || hashType;
+        // Estados
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const formState = document.getElementById('formState');
+        const successState = document.getElementById('successState');
+        const messageContainer = document.getElementById('messageContainer');
+        const resetForm = document.getElementById('resetForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
         
-        console.log('Tokens:', { finalAccessToken, finalRefreshToken, finalType });
-        
-        function openApp() {
-            // Construir el deep link con los tokens
-            let deepLink = 'com.barbershop.manager://reset-password';
-            
-            if (finalAccessToken) {
-                deepLink += `?access_token=${finalAccessToken}`;
-                if (finalRefreshToken) {
-                    deepLink += `&refresh_token=${finalRefreshToken}`;
+        // Verificar sesión al cargar
+        async function init() {
+            try {
+                // Obtener el hash de la URL (Supabase pone los tokens ahí)
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                const type = hashParams.get('type');
+                
+                console.log('Hash params:', { accessToken: accessToken ? 'present' : 'missing', type });
+                
+                if (!accessToken || type !== 'recovery') {
+                    showError();
+                    return;
                 }
-                if (finalType) {
-                    deepLink += `&type=${finalType}`;
+                
+                // Establecer la sesión con el token
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: hashParams.get('refresh_token') || ''
+                });
+                
+                if (error) {
+                    console.error('Error setting session:', error);
+                    showError();
+                    return;
                 }
+                
+                console.log('Session set successfully');
+                showForm();
+            } catch (error) {
+                console.error('Init error:', error);
+                showError();
             }
-            
-            console.log('Opening deep link:', deepLink);
-            
-            // Intentar abrir la app
-            window.location.href = deepLink;
-            
-            // Después de 2 segundos, mostrar instrucciones si no se abrió
-            setTimeout(() => {
-                document.getElementById('spinner').style.display = 'none';
-                document.getElementById('message').textContent = '¿No se abrió la app?';
-                document.getElementById('instructions').style.display = 'block';
-            }, 2000);
         }
         
-        // Intentar abrir la app automáticamente
-        if (finalAccessToken && finalType === 'recovery') {
-            setTimeout(() => {
-                openApp();
-            }, 1000);
-        } else {
-            // Si no hay tokens, mostrar error
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('message').textContent = 'Enlace inválido o expirado';
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').innerHTML = `
-                <strong>⚠️ Enlace inválido o expirado</strong>
-                <p style="margin-top: 8px; font-size: 14px;">
-                    Por favor solicita un nuevo enlace de recuperación desde la app.
-                </p>
-            `;
+        function showError() {
+            loadingState.classList.add('hidden');
+            errorState.classList.remove('hidden');
+            formState.classList.add('hidden');
+            successState.classList.add('hidden');
         }
         
-        // Mostrar el botón después de 3 segundos
-        setTimeout(() => {
-            if (finalAccessToken) {
-                document.getElementById('openAppBtn').style.display = 'inline-block';
+        function showForm() {
+            loadingState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            formState.classList.remove('hidden');
+            successState.classList.add('hidden');
+        }
+        
+        function showSuccess() {
+            loadingState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            formState.classList.add('hidden');
+            successState.classList.remove('hidden');
+        }
+        
+        function showMessage(message, type = 'error') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            messageContainer.innerHTML = '';
+            messageContainer.appendChild(div);
+        }
+        
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+        
+        // Validación en tiempo real
+        function validatePassword() {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            // Validar longitud
+            const lengthReq = document.getElementById('req-length');
+            if (password.length >= 6) {
+                lengthReq.className = 'requirement-met';
+                lengthReq.textContent = '✓ Mínimo 6 caracteres';
+            } else {
+                lengthReq.className = 'requirement-unmet';
+                lengthReq.textContent = '✗ Mínimo 6 caracteres';
             }
-        }, 3000);
+            
+            // Validar coincidencia
+            const matchReq = document.getElementById('req-match');
+            if (password && confirmPassword && password === confirmPassword) {
+                matchReq.className = 'requirement-met';
+                matchReq.textContent = '✓ Las contraseñas coinciden';
+            } else {
+                matchReq.className = 'requirement-unmet';
+                matchReq.textContent = '✗ Las contraseñas coinciden';
+            }
+            
+            // Habilitar/deshabilitar botón
+            const isValid = password.length >= 6 && password === confirmPassword;
+            submitBtn.disabled = !isValid;
+        }
+        
+        passwordInput.addEventListener('input', validatePassword);
+        confirmPasswordInput.addEventListener('input', validatePassword);
+        
+        // Manejar envío del formulario
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            // Validaciones
+            if (password.length < 6) {
+                showMessage('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showMessage('Las contraseñas no coinciden');
+                return;
+            }
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Actualizando...';
+                
+                // Actualizar contraseña
+                const { error } = await supabase.auth.updateUser({
+                    password: password
+                });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // Éxito
+                showSuccess();
+                
+                // Cerrar sesión después de 3 segundos
+                setTimeout(async () => {
+                    await supabase.auth.signOut();
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Error updating password:', error);
+                showMessage(error.message || 'No se pudo actualizar la contraseña. Por favor intenta de nuevo.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '✅ Actualizar Contraseña';
+            }
+        });
+        
+        // Inicializar
+        init();
     </script>
 </body>
 </html>
